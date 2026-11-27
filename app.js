@@ -74,6 +74,13 @@ async function ensureQuiz(langID) {
   return state.quizCache[langID];
 }
 
+async function ensureInfo(langID) {
+  if (!state.infoCache[langID]) {
+    state.infoCache[langID] = await fetchJson(`./data/info_${langID}.json`);
+  }
+  return state.infoCache[langID];
+}
+
 let metadataPromise = null;
 function ensureMetadata() {
   if (!metadataPromise) {
@@ -300,8 +307,7 @@ async function openVerse(vSeqNo) {
 
   const bodyEl = document.getElementById('reader-body');
   bodyEl.style.fontSize = state.prefs.fontSize + 'px';
-  const paragraphs = (v.vText || '').split(/(?:\\r\\n|\\n|\r?\n)/).filter(p => p.trim().length > 0);
-  bodyEl.innerHTML = paragraphs.map(p => `<p>${esc(p)}</p>`).join('');
+  bodyEl.innerHTML = renderHighlightedParagraphs(v.vText || '', v.highlightJson);
 
   document.getElementById('reader-scroll').scrollTop = 0;
   document.getElementById('btn-prev-verse').disabled = v.vSeqNo <= 0;
@@ -634,6 +640,100 @@ function esc(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function renderHighlightedParagraphs(rawText, highlightJson) {
+  // Normalize literal escaped newlines to actual \r\n (2 chars) / \n (1 char)
+  // so highlightJson character offsets align 100% accurately across all paragraphs
+  rawText = String(rawText || '').replace(/\\r\\n/g, '\r\n').replace(/\\n/g, '\n');
+
+  let highlights = [];
+  if (highlightJson) {
+    try {
+      const parsed = typeof highlightJson === 'string' ? JSON.parse(highlightJson) : highlightJson;
+      if (Array.isArray(parsed)) {
+        highlights = parsed.filter(h => h && h.q === 's' && typeof h.p === 'number' && typeof h.e === 'number' && h.e > h.p && h.i);
+      }
+    } catch (e) {}
+  }
+
+  // Split into paragraphs while tracking exact character offsets in rawText
+  const sepRegex = /\r?\n/g;
+  const paras = [];
+  let lastIdx = 0;
+  let m;
+  while ((m = sepRegex.exec(rawText)) !== null) {
+    if (m.index > lastIdx) {
+      paras.push({ start: lastIdx, end: m.index });
+    }
+    lastIdx = m.index + m[0].length;
+  }
+  if (lastIdx < rawText.length) {
+    paras.push({ start: lastIdx, end: rawText.length });
+  }
+
+  return paras.map(({ start, end }) => {
+    const segText = rawText.slice(start, end);
+    if (!segText.trim()) return '';
+    if (!highlights.length) return `<p>${esc(segText)}</p>`;
+
+    const localHls = highlights.filter(h => h.e > start && h.p < end);
+    if (!localHls.length) return `<p>${esc(segText)}</p>`;
+
+    const ptsSet = new Set([start, end]);
+    for (const h of localHls) {
+      ptsSet.add(Math.max(start, h.p));
+      ptsSet.add(Math.min(end, h.e));
+    }
+    const pts = Array.from(ptsSet).sort((a, b) => a - b);
+
+    let out = '';
+    for (let k = 0; k < pts.length - 1; k++) {
+      const a = pts[k], b = pts[k + 1];
+      if (b <= a) continue;
+      const slice = rawText.slice(a, b);
+      const covering = localHls.filter(h => h.p <= a && h.e >= b);
+      if (covering.length) {
+        const ids = Array.from(new Set(covering.map(h => h.i))).join(',');
+        out += `<span class="vma-hl" onclick="openHighlightInfo('${ids}', this.textContent)">${esc(slice)}</span>`;
+      } else {
+        out += esc(slice);
+      }
+    }
+    return `<p>${out}</p>`;
+  }).join('');
+}
+
+function formatInfoText(raw) {
+  let txt = String(raw || '').replace(/\\n/g, '\n');
+  // Split into lines/tokens and format [[def]], {header}, @img.jpg@
+  const parts = txt.split(/(\[\[[\s\S]*?\]\]|\{[^}]+\}|@[^@\s]+\.(?:jpg|jpeg|png|webp)@)/gi);
+  return parts.map(part => {
+    if (!part) return '';
+    if (part.startsWith('[[') && part.endsWith(']]')) {
+      return `<div class="info-def-box">${esc(part.slice(2, -2)).replace(/\n/g, '<br>')}</div>`;
+    }
+    if (part.startsWith('{') && part.endsWith('}')) {
+      return `<div><span class="info-sec-heading">${esc(part.slice(1, -1))}</span></div>`;
+    }
+    if (part.startsWith('@') && part.endsWith('@')) {
+      const imgName = part.slice(1, -1).trim();
+      return `<img class="info-img" src="./img/info/${esc(imgName)}" alt="${esc(imgName)}" loading="lazy">`;
+    }
+    return `<span>${esc(part).replace(/\n/g, '<br>')}</span>`;
+  }).join('');
+}
+
+async function openHighlightInfo(idsCsv, clickedWord) {
+  const ids = idsCsv.split(',').filter(Boolean);
+  const imap = await ensureInfo(state.prefs.contentLangID);
+  const blocks = ids.map(id => imap[id]).filter(Boolean);
+  if (!blocks.length) {
+    openModal(clickedWord || 'Info', '<div class="empty-state">No additional explanation found.</div>');
+    return;
+  }
+  const html = blocks.map(b => `<div class="info-entry"><div class="info-text-body">${formatInfoText(b.t)}</div></div>`).join('');
+  openModal(clickedWord || 'Explanation', html);
 }
 
 // Swipe & Keyboard navigation in Reader

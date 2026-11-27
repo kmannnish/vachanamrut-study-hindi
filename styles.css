@@ -441,6 +441,66 @@ html, body {
   text-align: justify;
 }
 
+.vma-hl {
+  border-bottom: 1.5px dotted rgba(67, 158, 89, 0.75);
+  color: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+
+.vma-hl:hover,
+.vma-hl:active {
+  background: rgba(67, 158, 89, 0.15);
+}
+
+.info-entry {
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.info-entry:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.info-def-box {
+  background: var(--surface);
+  border-left: 3px solid var(--green);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin: 6px 0 10px;
+  line-height: 1.55;
+}
+
+.info-sec-heading {
+  display: inline-block;
+  margin: 10px 0 6px;
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: rgba(67, 158, 89, 0.14);
+  color: var(--tab-selected);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.info-text-body {
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.info-img {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  margin: 10px auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
 .reader-end-dots {
   text-align: center;
   letter-spacing: 6px;
