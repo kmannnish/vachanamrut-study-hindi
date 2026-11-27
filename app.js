@@ -223,7 +223,7 @@ async function renderBrowseList() {
   }
 
   if (state.browseTab === 'subjects') {
-    const subjs = state.subjects.filter(s => s.langID === lid);
+    const subjs = state.subjects.filter(s => s.langID === state.prefs.uiLangID);
     let html = '';
     for (const sub of subjs) {
       const ids = state.subjectVerses[String(sub.subjectID)] || [];
@@ -612,6 +612,9 @@ function changeUiLang(id) {
   state.prefs.uiLangID = parseInt(id, 10);
   savePrefs();
   applyUiStrings();
+  if (state.currentScreen === 'screen-browse' && state.browseTab === 'subjects') {
+    renderBrowseList();
+  }
 }
 
 async function changeContentLang(id) {
