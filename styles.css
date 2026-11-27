@@ -436,9 +436,35 @@ html, body {
 }
 
 .reader-body p {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   line-height: 1.8;
   text-align: justify;
+  padding: 6px 10px;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  transition: color 0.65s ease, background-color 0.65s ease, opacity 0.65s ease, border-color 0.65s ease;
+}
+
+.reader-body.audio-sync-on p {
+  opacity: 0.52;
+  cursor: pointer;
+}
+
+.reader-body.audio-sync-on p.audio-past {
+  opacity: 0.78;
+}
+
+.reader-body.audio-sync-on p.audio-active {
+  opacity: 1;
+  color: #1b5e36;
+  background: rgba(67, 158, 89, 0.11);
+  border-left-color: var(--green);
+}
+
+body.night-mode .reader-body.audio-sync-on p.audio-active {
+  color: #a8f0c6;
+  background: rgba(60, 184, 120, 0.16);
+  border-left-color: var(--green);
 }
 
 .vma-hl {

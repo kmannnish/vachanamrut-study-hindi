@@ -309,6 +309,7 @@ async function openVerse(vSeqNo) {
   const bodyEl = document.getElementById('reader-body');
   bodyEl.style.fontSize = state.prefs.fontSize + 'px';
   bodyEl.innerHTML = renderHighlightedParagraphs(v.vText || '', v.highlightJson);
+  setupAudioParagraphSync(bodyEl);
 
   document.getElementById('reader-scroll').scrollTop = 0;
   document.getElementById('btn-prev-verse').disabled = v.vSeqNo <= 0;
@@ -381,6 +382,7 @@ async function toggleAudioPlayer() {
     closeAudioBar();
   } else {
     bar.classList.add('visible');
+    updateAudioParagraphHighlight();
     await loadAudioForCurrentVerse(true);
   }
 }
@@ -416,6 +418,7 @@ function closeAudioBar() {
   const audioEl = document.getElementById('html-audio');
   audioEl.pause();
   document.getElementById('audio-bar').classList.remove('visible');
+  clearAudioSyncVisuals();
 }
 
 function togglePlayPause() {
@@ -426,12 +429,16 @@ function togglePlayPause() {
 
 function seekAudio(pct) {
   const audioEl = document.getElementById('html-audio');
-  if (audioEl.duration) audioEl.currentTime = (pct / 100) * audioEl.duration;
+  if (audioEl.duration) {
+    audioEl.currentTime = (pct / 100) * audioEl.duration;
+    updateAudioParagraphHighlight();
+  }
 }
 
 function skipAudio(sec) {
   const audioEl = document.getElementById('html-audio');
   audioEl.currentTime = Math.max(0, (audioEl.currentTime || 0) + sec);
+  updateAudioParagraphHighlight();
 }
 
 function cycleAudioSpeed() {
@@ -451,16 +458,90 @@ function fmtTime(s) {
 
 (function bindAudioEvents() {
   const audioEl = document.getElementById('html-audio');
-  audioEl.addEventListener('play', () => document.getElementById('audio-play-btn').textContent = '❚❚');
+  audioEl.addEventListener('play', () => {
+    document.getElementById('audio-play-btn').textContent = '❚❚';
+    updateAudioParagraphHighlight();
+  });
   audioEl.addEventListener('pause', () => document.getElementById('audio-play-btn').textContent = '▶');
+  audioEl.addEventListener('ended', () => clearAudioSyncVisuals());
   audioEl.addEventListener('timeupdate', () => {
     document.getElementById('audio-cur-time').textContent = fmtTime(audioEl.currentTime);
     document.getElementById('audio-dur-time').textContent = fmtTime(audioEl.duration);
     if (audioEl.duration) {
       document.getElementById('audio-seek').value = (audioEl.currentTime / audioEl.duration) * 100;
+      updateAudioParagraphHighlight();
     }
   });
 })();
+
+let paraTimingMap = [];
+let lastActiveParaIdx = -1;
+
+function setupAudioParagraphSync(bodyEl) {
+  paraTimingMap = [];
+  lastActiveParaIdx = -1;
+  const ps = Array.from(bodyEl.querySelectorAll('p'));
+  if (!ps.length) return;
+
+  const weights = ps.map(p => Math.max(20, (p.textContent || '').replace(/\s+/g, '').length));
+  const total = weights.reduce((a, b) => a + b, 0) || 1;
+  let acc = 0;
+  ps.forEach((p, idx) => {
+    const startRatio = acc / total;
+    acc += weights[idx];
+    const endRatio = acc / total;
+    paraTimingMap.push({ el: p, startRatio, endRatio });
+    p.onclick = (e) => {
+      if (e.target && e.target.closest('.vma-hl')) return;
+      const bar = document.getElementById('audio-bar');
+      const audioEl = document.getElementById('html-audio');
+      if (bar.classList.contains('visible') && audioEl.duration) {
+        audioEl.currentTime = startRatio * audioEl.duration;
+        if (audioEl.paused) audioEl.play().catch(() => {});
+        updateAudioParagraphHighlight();
+      }
+    };
+  });
+  updateAudioParagraphHighlight();
+}
+
+function updateAudioParagraphHighlight() {
+  const bodyEl = document.getElementById('reader-body');
+  const bar = document.getElementById('audio-bar');
+  const audioEl = document.getElementById('html-audio');
+  if (!bodyEl || !bar || !bar.classList.contains('visible') || !paraTimingMap.length) {
+    clearAudioSyncVisuals();
+    return;
+  }
+  bodyEl.classList.add('audio-sync-on');
+  const ratio = audioEl.duration ? Math.min(0.9999, Math.max(0, audioEl.currentTime / audioEl.duration)) : 0;
+
+  let activeIdx = 0;
+  for (let i = 0; i < paraTimingMap.length; i++) {
+    if (ratio >= paraTimingMap[i].startRatio) activeIdx = i;
+  }
+
+  paraTimingMap.forEach((item, idx) => {
+    item.el.classList.toggle('audio-active', idx === activeIdx);
+    item.el.classList.toggle('audio-past', idx < activeIdx);
+  });
+
+  if (activeIdx !== lastActiveParaIdx && !audioEl.paused) {
+    lastActiveParaIdx = activeIdx;
+    paraTimingMap[activeIdx].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function clearAudioSyncVisuals() {
+  const bodyEl = document.getElementById('reader-body');
+  if (bodyEl) {
+    bodyEl.classList.remove('audio-sync-on');
+    bodyEl.querySelectorAll('p').forEach(p => {
+      p.classList.remove('audio-active', 'audio-past');
+    });
+  }
+  lastActiveParaIdx = -1;
+}
 
 // ================= SEARCH =================
 function goSearch() {
