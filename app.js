@@ -74,24 +74,33 @@ async function ensureQuiz(langID) {
   return state.quizCache[langID];
 }
 
+let metadataPromise = null;
+function ensureMetadata() {
+  if (!metadataPromise) {
+    metadataPromise = Promise.all([
+      fetchJson('./data/languages.json'),
+      fetchJson('./data/sections.json'),
+      fetchJson('./data/subjects.json'),
+      fetchJson('./data/subject_verses.json')
+    ]).then(([langs, secs, subjs, sv]) => {
+      state.languages = langs;
+      state.sections = secs;
+      state.subjects = subjs;
+      state.subjectVerses = sv;
+      applyUiStrings();
+    });
+  }
+  return metadataPromise;
+}
+
 async function initApp() {
   applyTheme();
-  const [langs, secs, subjs, sv] = await Promise.all([
-    fetchJson('./data/languages.json'),
-    fetchJson('./data/sections.json'),
-    fetchJson('./data/subjects.json'),
-    fetchJson('./data/subject_verses.json')
-  ]);
-  state.languages = langs;
-  state.sections = secs;
-  state.subjects = subjs;
-  state.subjectVerses = sv;
-  applyUiStrings();
-  await ensureVerses(state.prefs.contentLangID);
-
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
+  await ensureMetadata();
+  // Prefetch active reading language in background without blocking Home screen
+  setTimeout(() => { ensureVerses(state.prefs.contentLangID).catch(() => {}); }, 200);
 }
 
 function applyTheme() {
