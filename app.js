@@ -143,6 +143,8 @@ function showScreen(id) {
   state.currentScreen = id;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  const shell = document.querySelector('.app-shell');
+  if (shell) shell.classList.toggle('has-sidebar', id !== 'screen-home');
 }
 
 function openDrawer() {
