@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#333c52">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Vachanamrut Study</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./img/ic_launcher.png">
+  <link rel="icon" type="image/png" href="./img/ic_launcher.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ================= HOME SCREEN ================= -->
+    <section id="screen-home" class="screen home-screen active">
+      <div class="home-top-bar">
+        <button class="home-round-btn" onclick="openDrawer()" aria-label="Menu">
+          <span class="vma-icon">j</span>
+        </button>
+        <button class="home-round-btn" onclick="openGlobalSettings()" aria-label="Settings">
+          <span class="vma-icon">o</span>
+        </button>
+      </div>
+      <div class="home-bottom-wrap">
+        <div class="home-bottom-bar">
+          <button class="home-bottom-btn" id="btn-home-vach" onclick="goBrowse('sections')">Vachanamrut</button>
+          <button class="home-bookmark-circle" onclick="openBookmark()" aria-label="Bookmark">
+            <span class="vma-icon">H</span>
+          </button>
+          <button class="home-bottom-btn" id="btn-home-last" onclick="openLastVisited()">Last Visited</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= BROWSE SCREEN ================= -->
+    <section id="screen-browse" class="screen">
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="openDrawer()" aria-label="Menu">
+          <span class="vma-icon">j</span>
+        </button>
+        <div class="toolbar-title" id="browse-title">Vachanamrut</div>
+        <button class="toolbar-btn" onclick="goSearch()" aria-label="Search">
+          <span class="vma-icon">Y</span>
+        </button>
+      </div>
+      <div class="browse-tabs" id="browse-tabs">
+        <button class="browse-tab active" data-tab="sections" onclick="switchBrowseTab('sections')">Sections</button>
+        <button class="browse-tab" data-tab="reading" onclick="switchBrowseTab('reading')">Reading Lists</button>
+        <button class="browse-tab" data-tab="subjects" onclick="switchBrowseTab('subjects')">Subjects</button>
+        <button class="browse-tab" data-tab="favourites" onclick="switchBrowseTab('favourites')">Favourites</button>
+        <button class="browse-tab" data-tab="history" onclick="switchBrowseTab('history')">History</button>
+      </div>
+      <div class="scroll-body" id="browse-list"></div>
+    </section>
+
+    <!-- ================= SEARCH SCREEN ================= -->
+    <section id="screen-search" class="screen">
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="goBackFromSearch()" aria-label="Back">
+          <span class="vma-icon">F</span>
+        </button>
+        <div class="toolbar-title" id="search-title">Search</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="search-box-wrap">
+        <input type="search" id="search-input" class="search-input" placeholder="Search Vachanamrut..." oninput="runSearch(this.value)">
+      </div>
+      <div class="scroll-body" id="search-results"></div>
+    </section>
+
+    <!-- ================= READER SCREEN ================= -->
+    <section id="screen-reader" class="screen">
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="goBrowse('sections')" aria-label="Back">
+          <span class="vma-icon">F</span>
+        </button>
+        <div class="toolbar-title" id="reader-toolbar-title">Vachanamrut</div>
+        <button class="toolbar-btn" id="reader-bookmark-btn" onclick="toggleBookmarkCurrent()" aria-label="Bookmark">
+          <span class="vma-icon">H</span>
+        </button>
+        <button class="toolbar-btn" onclick="goSearch()" aria-label="Search">
+          <span class="vma-icon">Y</span>
+        </button>
+      </div>
+      <div class="reader-strip">
+        <span id="reader-strip-section">Sections</span>
+        <span class="vma-icon reader-strip-check" id="reader-strip-read" onclick="toggleReadCurrent()">M</span>
+      </div>
+      <div class="reader-content-scroll" id="reader-scroll">
+        <div class="reader-vtitle" id="reader-vtitle"></div>
+        <div class="reader-body" id="reader-body"></div>
+        <div class="reader-end-dots">● ● ●</div>
+        <div class="reader-actions-row">
+          <button class="reader-action-btn fav" id="btn-reader-fav" onclick="toggleFavCurrent()">
+            <span class="reader-action-circle"><span class="vma-icon">y</span></span>
+            <span id="lbl-fav">Favourite</span>
+          </button>
+          <button class="reader-action-btn" id="btn-reader-list" onclick="toggleReadingListCurrent()">
+            <span class="reader-action-circle"><span class="vma-icon">u</span></span>
+            <span id="lbl-reading-list">Reading List</span>
+          </button>
+          <button class="reader-action-btn" id="btn-reader-read" onclick="toggleReadCurrent()">
+            <span class="reader-action-circle"><span class="vma-icon">M</span></span>
+            <span id="lbl-read">Read</span>
+          </button>
+        </div>
+        <div class="reader-nav-row">
+          <button class="reader-nav-btn" id="btn-prev-verse" onclick="navigateVerse(-1)">← Previous</button>
+          <button class="reader-nav-btn" id="btn-next-verse" onclick="navigateVerse(1)">Next →</button>
+        </div>
+      </div>
+
+      <!-- Audio Mini Player -->
+      <div class="audio-bar" id="audio-bar">
+        <div class="audio-top-row">
+          <div class="audio-title" id="audio-title">Audio</div>
+          <span class="audio-lang-badge" id="audio-lang-badge">Hindi</span>
+          <button class="audio-close-btn" onclick="closeAudioBar()">✕</button>
+        </div>
+        <div class="audio-seek-row">
+          <span id="audio-cur-time">0:00</span>
+          <input type="range" id="audio-seek" min="0" max="100" value="0" oninput="seekAudio(this.value)">
+          <span id="audio-dur-time">0:00</span>
+        </div>
+        <div class="audio-controls-row">
+          <button class="audio-ctrl-btn" onclick="skipAudio(-15)">-15s</button>
+          <button class="audio-play-btn" id="audio-play-btn" onclick="togglePlayPause()">▶</button>
+          <button class="audio-ctrl-btn" onclick="skipAudio(15)">+15s</button>
+          <button class="audio-ctrl-btn" id="audio-speed-btn" onclick="cycleAudioSpeed()">1x</button>
+        </div>
+        <audio id="html-audio" preload="none"></audio>
+      </div>
+
+      <!-- Bottom 5-Tab Bar -->
+      <div class="reader-bottom-tabs">
+        <button class="reader-tab-item" onclick="openQuizModal()">
+          <span class="vma-icon">a</span>
+          <span id="lbl-tab-quiz">Quiz</span>
+        </button>
+        <button class="reader-tab-item" onclick="openNotesModal()">
+          <span class="vma-icon">C</span>
+          <span id="lbl-tab-notes">Notes</span>
+        </button>
+        <button class="reader-info-center" onclick="openInfoModal()" aria-label="Info">
+          <span class="vma-icon">T</span>
+        </button>
+        <button class="reader-tab-item" id="tab-audio-btn" onclick="toggleAudioPlayer()">
+          <span class="vma-icon">Z</span>
+          <span id="lbl-tab-audio">Audio</span>
+        </button>
+        <button class="reader-tab-item" onclick="openReaderSettings()">
+          <span class="vma-icon">o</span>
+          <span id="lbl-tab-settings">Settings</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ================= NAVIGATION DRAWER ================= -->
+    <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+    <nav class="drawer-panel" id="drawer-panel">
+      <div class="drawer-header">
+        <img src="./img/ic_launcher.png" alt="Vachanamrut">
+        <div>
+          <div class="drawer-header-title" id="drawer-app-name">Vachanamrut Study</div>
+          <div class="drawer-header-sub">Web App • Hindi / Gujarati / English</div>
+        </div>
+      </div>
+      <div class="drawer-list">
+        <button class="drawer-item" onclick="closeDrawer(); showScreen('screen-home')"><span class="vma-icon">j</span><span id="d-home">Home</span></button>
+        <button class="drawer-item" onclick="closeDrawer(); goBrowse('sections')"><span class="vma-icon">H</span><span id="d-vach">Vachanamrut</span></button>
+        <button class="drawer-item" onclick="closeDrawer(); goSearch()"><span class="vma-icon">Y</span><span id="d-search">Search</span></button>
+        <button class="drawer-item" onclick="closeDrawer(); goBrowse('favourites')"><span class="vma-icon">y</span><span id="d-fav">Favourites</span></button>
+        <button class="drawer-item" onclick="closeDrawer(); goBrowse('reading')"><span class="vma-icon">u</span><span id="d-rlist">Reading Lists</span></button>
+        <button class="drawer-item" onclick="closeDrawer(); openGlobalSettings()"><span class="vma-icon">o</span><span id="d-settings">Settings</span></button>
+      </div>
+    </nav>
+
+    <!-- ================= MODAL SHEET ================= -->
+    <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <span id="modal-title">Modal</span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

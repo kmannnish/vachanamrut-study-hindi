@@ -1,0 +1,22 @@
+{
+  "name": "Vachanamrut Study",
+  "short_name": "Vachanamrut",
+  "description": "Vachanamrut Study — Hindi, Gujarati & English with Audio",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#333c52",
+  "theme_color": "#333c52",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./img/ic_launcher.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/ic_launcher.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
