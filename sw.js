@@ -1,8 +1,8 @@
-const CACHE_NAME = 'vma-pwa-v3';
+const CACHE_NAME = 'vma-pwa-v4';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=3',
+  './styles.css?v=4',
   './app.js?v=3',
   './manifest.json',
   './fonts/vachanamrut_icon.ttf',

@@ -988,25 +988,6 @@ html, body {
 
 /* 3) Laptop & Desktop (1024px+) */
 @media (min-width: 1024px) {
-  /* Persistent sidebar when NOT on Home screen */
-  .app-shell.has-sidebar .drawer-panel {
-    position: relative;
-    transform: none !important;
-    width: 260px;
-    min-width: 260px;
-    border-right: 1px solid var(--divider);
-    z-index: 10;
-  }
-  .app-shell.has-sidebar .drawer-backdrop {
-    display: none !important;
-  }
-  .app-shell.has-sidebar .screen {
-    left: 260px;
-  }
-  /* Hide redundant menu icon in toolbar when sidebar is docked */
-  .app-shell.has-sidebar #screen-browse .toolbar-btn[aria-label="Menu"] {
-    display: none;
-  }
   .reader-content-scroll {
     padding: 36px 56px 48px;
   }
@@ -1024,13 +1005,6 @@ html, body {
 
 /* 4) Wide & Ultrawide Screens (1440px+) */
 @media (min-width: 1440px) {
-  .app-shell.has-sidebar .drawer-panel {
-    width: 290px;
-    min-width: 290px;
-  }
-  .app-shell.has-sidebar .screen {
-    left: 290px;
-  }
   .reader-vtitle,
   .reader-body,
   .reader-end-dots,
