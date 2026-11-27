@@ -30,6 +30,7 @@ function loadPrefs() {
     contentLangID: 5,  // Default Hindi Text & Audio
     fontSize: 18,
     nightMode: false,
+    englishDigits: false,
     favs: [],
     readingList: [],
     readVerses: [],
@@ -204,8 +205,8 @@ async function renderBrowseList() {
       html += `
         <div class="section-header" onclick="toggleSection(${s.sSeqNo})">
           <div class="section-header-left">
-            <div class="section-title">${esc(s.sName)}</div>
-            ${s.sDescription ? `<div class="section-desc">${esc(s.sDescription)}</div>` : ''}
+            <div class="section-title">${escNum(s.sName)}</div>
+            ${s.sDescription ? `<div class="section-desc">${escNum(s.sDescription)}</div>` : ''}
           </div>
           <div class="section-progress-wrap">
             <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -231,7 +232,7 @@ async function renderBrowseList() {
       html += `
         <div class="section-header" onclick="toggleSubject(${sub.subjectID})">
           <div class="section-header-left">
-            <div class="section-title">${esc(sub.subjectName)}</div>
+            <div class="section-title">${escNum(sub.subjectName)}</div>
           </div>
           <div class="progress-count">${ids.length}</div>
         </div>
@@ -264,7 +265,7 @@ function renderVerseRow(v) {
   return `
     <div class="verse-row" onclick="openVerse(${v.vSeqNo})">
       ${isRead ? '<span class="verse-row-read-dot"></span>' : ''}
-      <div class="verse-row-title">${esc(v.vsShortName)}: ${esc(v.vTitle)}</div>
+      <div class="verse-row-title">${escNum(v.vsShortName)}: ${escNum(v.vTitle)}</div>
       <button class="verse-row-fav vma-icon ${isFav ? 'is-fav' : ''}" onclick="event.stopPropagation(); toggleFav(${v.vSeqNo})">${isFav ? 'y' : 'p'}</button>
     </div>
   `;
@@ -300,10 +301,10 @@ async function openVerse(vSeqNo) {
   const v = verses.find(x => x.vSeqNo === vSeqNo) || verses[0];
   if (!v) return;
 
-  document.getElementById('reader-toolbar-title').textContent = v.vsName || v.vsShortName;
+  document.getElementById('reader-toolbar-title').textContent = fmtNum(v.vsName || v.vsShortName);
   const sec = state.sections.find(s => s.sSeqNo === v.sSeqNo && s.langID === state.prefs.contentLangID);
-  document.getElementById('reader-strip-section').textContent = sec ? sec.sName : 'Sections';
-  document.getElementById('reader-vtitle').textContent = v.vTitle || '';
+  document.getElementById('reader-strip-section').textContent = fmtNum(sec ? sec.sName : 'Sections');
+  document.getElementById('reader-vtitle').textContent = fmtNum(v.vTitle || '');
 
   const bodyEl = document.getElementById('reader-body');
   bodyEl.style.fontSize = state.prefs.fontSize + 'px';
@@ -399,7 +400,7 @@ async function loadAudioForCurrentVerse(autoplay) {
 
   const isHindi = state.prefs.contentLangID === 5;
   badgeEl.textContent = isHindi ? 'हिन्दी' : 'ગુજરાતી';
-  titleEl.textContent = `${v.vsShortName}: ${v.vTitle}`;
+  titleEl.textContent = fmtNum(`${v.vsShortName}: ${v.vTitle}`);
   const url = getAudioUrl(v.vSeqNo, state.prefs.contentLangID);
 
   if (audioEl.src !== url) {
@@ -498,8 +499,8 @@ async function runSearch(query) {
   container.innerHTML = matches.map(({ v, snippet }) => `
     <div class="verse-row" onclick="openVerse(${v.vSeqNo})">
       <div style="flex:1">
-        <div class="verse-row-title">${esc(v.vsShortName)}: ${esc(v.vTitle)}</div>
-        ${snippet ? `<div class="search-snippet">${esc(snippet)}</div>` : ''}
+        <div class="verse-row-title">${escNum(v.vsShortName)}: ${escNum(v.vTitle)}</div>
+        ${snippet ? `<div class="search-snippet">${escNum(snippet)}</div>` : ''}
       </div>
     </div>
   `).join('');
@@ -536,8 +537,8 @@ async function openQuizModal() {
     } catch (e) { ansText = item.a; }
     return `
       <div class="quiz-card" onclick="this.classList.toggle('open')">
-        <div class="quiz-q">${esc(item.q)}</div>
-        <div class="quiz-a">${esc(ansText || 'Answer highlighted in discourse.')}</div>
+        <div class="quiz-q">${escNum(item.q)}</div>
+        <div class="quiz-a">${escNum(ansText || 'Answer highlighted in discourse.')}</div>
       </div>
     `;
   }).join('');
@@ -604,6 +605,12 @@ function openSettingsModal(isReader) {
         Night Reading Mode
       </label>
     </div>
+    <div class="setting-group">
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:15px;">
+        <input type="checkbox" ${state.prefs.englishDigits ? 'checked' : ''} onchange="toggleEnglishDigits(this.checked)">
+        Show Numbers in English (0-9)
+      </label>
+    </div>
   `;
   openModal(getUiText('settings', 'Settings'), html);
 }
@@ -637,12 +644,35 @@ function toggleNightMode(on) {
   applyTheme();
 }
 
+function toggleEnglishDigits(on) {
+  state.prefs.englishDigits = !!on;
+  savePrefs();
+  if (state.currentScreen === 'screen-browse') renderBrowseList();
+  if (state.currentScreen === 'screen-reader') openVerse(state.currentVerseSeq);
+  if (state.currentScreen === 'screen-search') {
+    const q = document.getElementById('search-input')?.value;
+    if (q) runSearch(q);
+  }
+}
+
+function fmtNum(str) {
+  const s = String(str || '');
+  if (!state.prefs.englishDigits) return s;
+  return s
+    .replace(/[०-९]/g, ch => String(ch.charCodeAt(0) - 0x0966))
+    .replace(/[૦-૯]/g, ch => String(ch.charCodeAt(0) - 0x0AE6));
+}
+
 function esc(str) {
   return String(str || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function escNum(str) {
+  return esc(fmtNum(str));
 }
 
 function renderHighlightedParagraphs(rawText, highlightJson) {
@@ -678,10 +708,10 @@ function renderHighlightedParagraphs(rawText, highlightJson) {
   return paras.map(({ start, end }) => {
     const segText = rawText.slice(start, end);
     if (!segText.trim()) return '';
-    if (!highlights.length) return `<p>${esc(segText)}</p>`;
+    if (!highlights.length) return `<p>${escNum(segText)}</p>`;
 
     const localHls = highlights.filter(h => h.e > start && h.p < end);
-    if (!localHls.length) return `<p>${esc(segText)}</p>`;
+    if (!localHls.length) return `<p>${escNum(segText)}</p>`;
 
     const ptsSet = new Set([start, end]);
     for (const h of localHls) {
@@ -698,9 +728,9 @@ function renderHighlightedParagraphs(rawText, highlightJson) {
       const covering = localHls.filter(h => h.p <= a && h.e >= b);
       if (covering.length) {
         const ids = Array.from(new Set(covering.map(h => h.i))).join(',');
-        out += `<span class="vma-hl" onclick="openHighlightInfo('${ids}', this.textContent)">${esc(slice)}</span>`;
+        out += `<span class="vma-hl" onclick="openHighlightInfo('${ids}', this.textContent)">${escNum(slice)}</span>`;
       } else {
-        out += esc(slice);
+        out += escNum(slice);
       }
     }
     return `<p>${out}</p>`;
@@ -714,16 +744,16 @@ function formatInfoText(raw) {
   return parts.map(part => {
     if (!part) return '';
     if (part.startsWith('[[') && part.endsWith(']]')) {
-      return `<div class="info-def-box">${esc(part.slice(2, -2)).replace(/\n/g, '<br>')}</div>`;
+      return `<div class="info-def-box">${escNum(part.slice(2, -2)).replace(/\n/g, '<br>')}</div>`;
     }
     if (part.startsWith('{') && part.endsWith('}')) {
-      return `<div><span class="info-sec-heading">${esc(part.slice(1, -1))}</span></div>`;
+      return `<div><span class="info-sec-heading">${escNum(part.slice(1, -1))}</span></div>`;
     }
     if (part.startsWith('@') && part.endsWith('@')) {
       const imgName = part.slice(1, -1).trim();
       return `<img class="info-img" src="./img/info/${esc(imgName)}" alt="${esc(imgName)}" loading="lazy">`;
     }
-    return `<span>${esc(part).replace(/\n/g, '<br>')}</span>`;
+    return `<span>${escNum(part).replace(/\n/g, '<br>')}</span>`;
   }).join('');
 }
 
